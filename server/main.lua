@@ -1,20 +1,14 @@
-local enet = require "shared.lib.enet"
-local unfair = require "shared.lib.unfair"
-local packer = require "shared.lib.packer"
-local constants = require "shared.constants"
-
 local server = require "server"
-local client = require "server.client"
-
+local entities = require "shared.entities"
 local main
 
 function love.load()
   love.window.setMode(500, 500, {x = 50, y = 60})
   love.window.setTitle("Server")
+  love.graphics.setFont(love.graphics.newFont("bloat/SourceCodePro-Regular.ttf", 12))
 
-  main = server {
-    -- config
-  }
+  main = server {}
+  main:add(require("shared.entities.shitty_drawn_skybox"):new())
 end
 
 function love.update(dt)
@@ -42,9 +36,11 @@ function love.draw()
 
   for i, cl in pairs(main.clients) do
     table.insert(lines, "client " .. i)
-    table.insert(lines, "\xC2\xA0\xC2\xA0ping " .. cl.peer:round_trip_time())
-    table.insert(lines, "\xC2\xA0\xC2\xA0seq  " .. cl.last_processed_input)
+    table.insert(lines, "  ping  " .. cl.peer:round_trip_time() .. " ms")
+    table.insert(lines, "  seq   " .. cl.last_processed_input)
   end
 
-  love.graphics.printf(table.concat(lines, "\n"), 10, 10, love.graphics.getWidth() - 20)
+  love.graphics.setColor(0, 0, 0)
+  love.graphics.printf(table.concat(lines, "\n"):gsub(" ", "\xC2\xA0"), 4, 2, love.graphics.getWidth() - 8)
+  entities.show(main.entities)
 end

@@ -6,9 +6,16 @@ local constants = require "shared.constants"
 
 local client
 
+local state = require "client.lib.state"
+
 function love.load()
   love.window.setMode(500, 500, {x = 600, y = 60})
   love.window.setTitle("Client")
+
+  state:inject()
+  state:set(require("client.states.connecting")("localhost:6780"))
+
+  do return end
 
   client = {
     entities = {},
@@ -30,7 +37,7 @@ function love.load()
     error("failed to create peer")
   end
 end
-
+do return end
 function love.quit()
   if client.host and client.peer then
     client.peer:disconnect(1)
@@ -161,9 +168,10 @@ function love.draw()
   local lines = {
     #client.pending_inputs .. " pending inputs",
     "ping " .. client.peer:round_trip_time(),
-    "seq  " .. client.input_seq,
-    "ack  " .. client.input_ack
+    "seq\xC2\xA0\xC2\xA0" .. client.input_seq,
+    "ac\xC2\xA0\xC2\xA0" .. client.input_ack
   }
 
+  love.graphics.setColor(0, 0, 0)
   love.graphics.printf(table.concat(lines, "\n"), 10, 10, love.graphics.getWidth() - 20)
 end

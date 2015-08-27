@@ -2,6 +2,7 @@ local enet = require "shared.lib.enet"
 local unfair = require "shared.lib.unfair"
 local packer = require "shared.lib.packer"
 local constants = require "shared.constants"
+local entities = require "shared.entities"
 local client = require "server.client"
 
 local index = {}
@@ -62,7 +63,7 @@ function index:add(ent)
   local writer = packer.writer(7 + ent.max_pack_size)
   writer.u8(constants.packets.entity_add)
   writer.u32(ent.id)
-  writer.u16(0)
+  writer.u16(entities.to_id(ent))
   ent:pack(writer)
   self.host:broadcast(writer.to_str())
 end

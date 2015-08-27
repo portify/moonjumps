@@ -5,6 +5,7 @@ local entity = {
   use_client_update = false,
   use_draw = false,
   use_draw_abs = false,
+  ent_list_name = "<unnamed>",
   net_graph_category = "other"
 }
 entity.__index = entity

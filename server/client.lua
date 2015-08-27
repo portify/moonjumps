@@ -1,5 +1,6 @@
 local packer = require "shared.lib.packer"
 local constants = require "shared.constants"
+local entities = require "shared.entities"
 local player = require "shared.entities.player"
 
 local index = {}
@@ -27,7 +28,7 @@ function index:connected()
 
   for id, ent in pairs(self.server.entities) do
     writer.u32(id)
-    writer.u16(0)
+    writer.u16(entities.to_id(ent))
     ent:pack(writer)
   end
 
