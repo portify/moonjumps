@@ -1,29 +1,40 @@
-local Entity = {}
-Entity.__index = Entity
+local baseentity = require "shared.entities.baseentity"
 
-function Entity:new()
-  return setmetatable({x = 0, y = 0, xv = 0, yv = 0}, self)
+local player = {
+  pack_size = 16,
+  user_control = true
+}
+player.__index = player
+setmetatable(player, baseentity)
+
+function player:new(x, y)
+  return setmetatable({
+    x = x, y = y,
+    xv = 0, yv = 0
+  }, self)
 end
 
-function Entity.pack_size()
-  return 4 * 4
+function player:new_client()
+  return setmetatable({
+    x = 0, y = 0, xv = 0, yv = 0
+  }, self)
 end
 
-function Entity:pack(writer)
+function player:pack(writer)
   writer.f32(self.x)
   writer.f32(self.y)
   writer.f32(self.xv)
   writer.f32(self.yv)
 end
 
-function Entity:unpack(reader)
+function player:unpack(reader)
   self.x = reader.f32()
   self.y = reader.f32()
   self.xv = reader.f32()
   self.yv = reader.f32()
 end
 
-function Entity:update(dt, input)
+function player:update_user(dt, input)
   self.xv = input.x * 100
   self.yv = self.yv + 300 * dt
 
@@ -37,8 +48,6 @@ function Entity:update(dt, input)
   self.y = math.min(self.y, 400)
 end
 
-function Entity:draw()
+function player:draw()
   love.graphics.rectangle("fill", self.x, self.y, 15, 15)
 end
-
-return Entity
