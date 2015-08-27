@@ -1,8 +1,10 @@
 return {
   packets = {
-    you_are_here = 0,
-    client_input = 1,
-    server_state = 2
+    entity_add = 0,
+    entity_remove = 1,
+    entity_control = 2,
+    client_input = 3,
+    server_state = 4
   },
   revision = 0,
   channels = 4

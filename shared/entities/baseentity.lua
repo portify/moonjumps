@@ -1,5 +1,5 @@
 local entity = {
-  pack_size = 0,
+  max_pack_size = 0,
   allow_control = false,
   use_server_update = false,
   use_client_update = false,
@@ -8,8 +8,14 @@ local entity = {
 }
 entity.__index = entity
 
-function entity:new()
-  return setmetatable({x = 0, y = 0, xv = 0, yv = 0}, self)
+function entity:new(server)
+  return setmetatable({
+    server = server
+  }, self)
+end
+
+function entity:new_client()
+  return setmetatable({}, self)
 end
 
 function entity.pack()

@@ -18,38 +18,52 @@ function love.load()
     last_processed_input = {}
   }
 
+  -- move this
+  function server:add(ent)
+    assert(ent.id == nil, "attempting to re-add entity", 1)
+    ent.id = self.next_entity_id
+    self.entities[ent.id] = ent
+    self.next_entity_id = self.next_entity_id + 1
+    local writer = packer.writer(7 + ent.max_pack_size)
+    writer.u8(constants.packets.entity_add)
+    writer.u32(ent.id)
+    writer.u16(0)
+    ent:pack(writer)
+    self.host:broadcast(writer.to_str())
+  end
+
   server.host = enet.host_create("*:6780", 64, 8, 0, 0)
-  server.host = unfair(server.host, 0)
+  server.host = unfair(server.host, 500)
 
   if server.host == nil then
     error("failed to create host")
   end
 end
 
-local function build_update()
-  local size = 5
+local function build_update(cl)
+  local size = 6
   local count = 0
 
   -- TODO: find a better way of calculating proper buffer size
   for _, ent in pairs(server.entities) do
-    size = size + 8 + ent:pack_size()
+    size = size + 8 + ent.max_pack_size
     count = count + 1
   end
 
   local writer = packer.writer(size)
   writer.u8(constants.packets.server_state)
+  writer.u32(cl.last_processed_input)
   writer.u32(count)
 
   for id, ent in pairs(server.entities) do
     writer.u32(id)
-    writer.u32(ent.last_processed_input)
     ent:pack(writer)
   end
 
   return writer.to_str()
 end
 
-function love.update()
+function love.update(dt)
   local event = server.host:service()
 
   while event do
@@ -72,11 +86,41 @@ function love.update()
     event = server.host:service()
   end
 
-  server.host:broadcast(build_update())
+  for _, ent in pairs(server.entities) do
+    if ent.use_server_update then
+      ent:update_server(dt)
+    end
+  end
+
+  for _, cl in pairs(server.clients) do
+    cl.peer:send(build_update(cl))
+  end
 end
 
 function love.draw()
+  love.graphics.push()
+
   for _, ent in pairs(server.entities) do
-    ent:draw()
+    if ent.use_draw then
+      ent:draw()
+    end
   end
+
+  love.graphics.pop()
+
+  for _, ent in pairs(server.entities) do
+    if ent.use_draw_abs then
+      ent:draw_abs()
+    end
+  end
+
+  local lines = {}
+
+  for i, cl in pairs(server.clients) do
+    table.insert(lines, "client " .. i)
+    table.insert(lines, "\xC2\xA0\xC2\xA0ping " .. cl.peer:round_trip_time())
+    table.insert(lines, "\xC2\xA0\xC2\xA0seq  " .. cl.last_processed_input)
+  end
+
+  love.graphics.printf(table.concat(lines, "\n"), 10, 10, love.graphics.getWidth() - 20)
 end

@@ -1,6 +1,6 @@
 local packer = require "shared.lib.packer"
 local constants = require "shared.constants"
-local entity = require "shared.entity"
+local player = require "shared.entities.player"
 
 local index = {}
 local mt = {__index = index}
@@ -8,26 +8,25 @@ local mt = {__index = index}
 function mt:new(server, peer)
   return setmetatable({
     server = server,
-    peer = peer
+    peer = peer,
+    last_processed_input = -1
   }, self)
 end
 
 function index:connected()
   print("client " .. self.peer:index() .. " connected")
 
-  local control = entity:new(self.server)
-  control.id = self.server.next_entity_id
-  self.server.entities[control.id] = control
+  self.player = player:new(self.server, 50, 50)
+  -- self.player.last_processed_input = -1
+  self.player.id = self.server.next_entity_id
+  self.server.entities[self.player.id] = self.player
   self.server.next_entity_id = self.server.next_entity_id + 1
-  control.x = 50
-  control.y = 50
-  control.last_processed_input = -1
 
-  self:set_control(control)
+  self:set_control(self.player)
 end
 
 function index:disconnected()
-  self.server.entities[self:get_control().id] = nil
+  self.server.entities[self.player.id] = nil
   print("client " .. self.peer:index() .. " disconnected")
 end
 
@@ -44,8 +43,8 @@ function index:received(reader)
     local control = self:get_control()
 
     if control ~= nil then
-      control:update(dt, input)
-      control.last_processed_input = input_sequence_number
+      control:update_user(dt, input, true)
+      self.last_processed_input = input_sequence_number
     end
   else
     error("unknown packet " .. packet)
@@ -57,11 +56,12 @@ function index:get_control()
 end
 
 function index:set_control(ent)
-  assert(ent.id, "cannot control entity with no net id")
+  assert(ent.allow_control, "cannot control this type of entity", 1)
+  assert(ent.id, "cannot control entity with no net id", 1)
   self.control_id = ent.id
   local writer = packer.writer(5)
-  writer.u8(constants.packets.you_are_here)
-  writer.u32(entity.id)
+  writer.u8(constants.packets.entity_control)
+  writer.u32(ent.id)
   self.peer:send(writer.to_str())
 end
 

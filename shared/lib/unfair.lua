@@ -33,8 +33,20 @@ return function(host, latency, jitter, loss)
         if love.math.random() >= loss then
           add(random(), function() peer:send(a, b, c) end)
         end
+      end,
+      round_trip_time = function(_, value)
+        if value then
+          return peer:round_trip_time(value)
+        end
+        return peer:round_trip_time() + latency
       end
-    }, {__index = peer})
+    }, {
+      __index = function(_, key)
+        return function(...)
+          peer[key](peer, ...)
+        end
+      end
+    })
   end
 
   return setmetatable({

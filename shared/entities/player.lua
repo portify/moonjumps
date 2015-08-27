@@ -1,21 +1,23 @@
 local baseentity = require "shared.entities.baseentity"
 
 local player = {
-  pack_size = 16,
-  user_control = true
+  max_pack_size = 16,
+  allow_control = true,
+  use_draw = true
 }
 player.__index = player
 setmetatable(player, baseentity)
 
-function player:new(x, y)
+function player:new(server, x, y)
   return setmetatable({
-    x = x, y = y,
-    xv = 0, yv = 0
+    server = server,
+    x = x, y = y, xv = 0, yv = 0
   }, self)
 end
 
-function player:new_client()
+function player:new_client(client)
   return setmetatable({
+    client = client,
     x = 0, y = 0, xv = 0, yv = 0
   }, self)
 end
@@ -51,3 +53,5 @@ end
 function player:draw()
   love.graphics.rectangle("fill", self.x, self.y, 15, 15)
 end
+
+return player

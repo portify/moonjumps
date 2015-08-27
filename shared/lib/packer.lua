@@ -14,7 +14,7 @@ local function reader(s)
   local ptr = ffi.new("unsigned char[?]", #s, s)
 
   local function read_str(n)
-    assert(len >= n, "read past eof", 1)
+    assert(len >= n, "read past eof")
     local str = ffi.string(ptr, n)
     len = len - n
     ptr = ptr + n
@@ -23,7 +23,7 @@ local function reader(s)
 
   local function read(ct)
     local size = ffi.sizeof(ct)
-    assert(len >= size, "read past eof", 1)
+    assert(len >= size, "read past eof")
     local cdata = ffi.cast(ct .. "*", ptr)[0]
     len = len - size
     ptr = ptr + size
@@ -54,14 +54,14 @@ local function writer(len)
   local ptr = buffer
 
   local function write_raw(src, n)
-    assert(len - (ptr - buffer) >= n, "write past eof", 1)
+    assert(len - (ptr - buffer) >= n, "write past eof")
     ffi.copy(ptr, src, len)
     ptr = ptr + n
   end
 
   local function write(ct, init)
     local size = ffi.sizeof(ct)
-    assert(len - (ptr - buffer) >= size, "write past eof", 1)
+    assert(len - (ptr - buffer) >= size, "write past eof")
     ffi.cast(ct .. "*", ptr)[0] = ffi.new(ct, init)
     ptr = ptr + size
   end
