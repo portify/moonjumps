@@ -19,6 +19,7 @@ function index:enter()
     return self:fail("host_create returned nil")
   end
 
+  -- self.host = require("shared.lib.unfair")(self.host)
   self.peer = self.host:connect(self.address, constants.channels, 0)
 
   if self.peer == nil then

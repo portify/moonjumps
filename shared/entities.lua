@@ -1,6 +1,6 @@
 local entities = {
-  require("shared.entities.player"),
-  require("shared.entities.shitty_drawn_skybox")
+  require "shared.entities.player",
+  require "shared.entities.sky"
 }
 
 local ids = {}

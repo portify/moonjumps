@@ -26,7 +26,7 @@ function index:update(dt)
 
     if event.type == "connect" then
       assert(cl == nil, "existing peer connect")
-      local cl = client:new(self, event.peer)
+      cl = client:new(self, event.peer)
       clients[peer_index] = cl
       cl:connected(event.data)
     elseif event.type == "disconnect" then
@@ -42,7 +42,7 @@ function index:update(dt)
   end
 
   for _, ent in pairs(self.entities) do
-    if ent.use_server_update then
+    if ent.update_server then
       ent:update_server(dt)
     end
   end
@@ -60,21 +60,25 @@ function index:add(ent)
   self.entities[ent.id] = ent
   self.next_entity_id = self.next_entity_id + 1
 
-  local writer = packer.writer(7 + ent.max_pack_size)
-  writer.u8(constants.packets.entity_add)
-  writer.u32(ent.id)
-  writer.u16(entities.to_id(ent))
-  ent:pack(writer)
-  self.host:broadcast(writer.to_str())
+  if ent.net_replicate then
+    local writer = packer.writer(7 + ent.max_pack_size)
+    writer.u8(constants.packets.entity_add)
+    writer.u32(ent.id)
+    writer.u16(entities.to_id(ent))
+    ent:pack(writer)
+    self.host:broadcast(writer.to_str())
+  end
 end
 
 function index:remove(ent)
   if ent.id == nil then return end
 
-  local writer = packer.writer(5)
-  writer.u8(constants.packets.entity_remove)
-  writer.u32(ent.id)
-  self.host:broadcast(writer.to_str())
+  if ent.net_replicate then
+    local writer = packer.writer(5)
+    writer.u8(constants.packets.entity_remove)
+    writer.u32(ent.id)
+    self.host:broadcast(writer.to_str())
+  end
 
   self.entities[ent.id] = nil
   ent.id = nil

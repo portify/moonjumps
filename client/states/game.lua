@@ -1,7 +1,6 @@
 local packer = require "shared.lib.packer"
 local constants = require "shared.constants"
 local entities = require "shared.entities"
-local player = require "shared.entities.player"
 
 local index = {}
 
@@ -27,8 +26,10 @@ function index:handle_receive(reader)
     while not reader.eof() do
       local id = reader.u32()
       local type = reader.u16()
-      -- self.entities[id] = player:new_client()
-      self.entities[id] = entities.from_id(type):new_client()
+      local mt = entities.from_id(type)
+      assert(mt ~= nil, "unknown entity type " .. type .. " in entity_add")
+      assert(mt.net_replicate, "non-replicated entity in entity_add")
+      self.entities[id] = mt:new_client()
       self.entities[id].client = self
       self.entities[id].id = id
       self.entities[id]:unpack(reader)
@@ -41,16 +42,16 @@ function index:handle_receive(reader)
     self.entity_id = reader.u32()
   elseif packet == constants.packets.server_state then
     local last_processed_input = reader.u32()
-    local count = reader.u32()
+    -- local count = reader.u32()
 
     self.input_ack = last_processed_input
 
-    for _=1, count do
+    -- for _=1, count do
+    while not reader.eof() do
       local entity_id = reader.u32()
 
       if not self.entities[entity_id] then
-        -- self.entities[entity_id] = player:new_client()
-        error("fuck")
+        error("update for unknown entity")
       end
 
       local ent = self.entities[entity_id]
@@ -93,7 +94,7 @@ function index:update(dt)
   end
 
   for _, ent in pairs(self.entities) do
-    if ent.use_client_update then
+    if ent.update_client then
       ent:update_client(dt)
     end
   end
@@ -131,7 +132,7 @@ function index:draw()
   love.graphics.push()
 
   for _, ent in pairs(self.entities) do
-    if ent.use_draw then
+    if ent.draw then
       ent:draw()
     end
   end
@@ -139,12 +140,13 @@ function index:draw()
   love.graphics.pop()
 
   for _, ent in pairs(self.entities) do
-    if ent.use_draw_abs then
-      ent:use_draw_abs()
+    if ent.draw_abs then
+      ent:draw_abs()
     end
   end
 
   local lines = {
+    "fps   " .. love.timer.getFPS(),
     "ping  " .. self.peer:round_trip_time() .. " ms",
     "up    " .. math.floor(self.host:total_sent_data() / self.net_time) .. " b/s",
     "down  " .. math.floor(self.host:total_received_data() / self.net_time) .. " b/s",
@@ -163,6 +165,8 @@ return function(host, peer)
     host = host,
     peer = peer,
     entities = {},
+    ents_draw = {},
+    ents_draw_abs = {},
     input_seq = 0,
     input_ack = -1,
     pending_inputs = {}

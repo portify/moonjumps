@@ -20,16 +20,20 @@ function index:connected()
   local size = 1
 
   for _, ent in pairs(self.server.entities) do
-    size = size + 6 + ent.max_pack_size
+    if ent.net_replicate then
+      size = size + 6 + ent.max_pack_size
+    end
   end
 
   local writer = packer.writer(size)
   writer.u8(constants.packets.entity_add)
 
   for id, ent in pairs(self.server.entities) do
-    writer.u32(id)
-    writer.u16(entities.to_id(ent))
-    ent:pack(writer)
+    if ent.net_replicate then
+      writer.u32(id)
+      writer.u16(entities.to_id(ent))
+      ent:pack(writer)
+    end
   end
 
   self.peer:send(writer.to_str())
@@ -72,7 +76,7 @@ function index:get_control()
 end
 
 function index:set_control(ent)
-  assert(ent.allow_control, "cannot control this type of entity", 1)
+  assert(ent.update_user, "cannot control this type of entity", 1)
   assert(ent.id, "cannot control entity with no net id", 1)
   self.control_id = ent.id
   local writer = packer.writer(5)
@@ -83,22 +87,26 @@ end
 
 function index:consider_send_update()
   local size = 6
-  local count = 0
+  -- local count = 0
 
   -- TODO: find a better way of calculating proper buffer size
   for _, ent in pairs(self.server.entities) do
-    size = size + 8 + ent.max_pack_size
-    count = count + 1
+    if ent.net_replicate then
+      size = size + 8 + ent.max_pack_size
+      -- count = count + 1
+    end
   end
 
   local writer = packer.writer(size)
   writer.u8(constants.packets.server_state)
   writer.u32(self.last_processed_input)
-  writer.u32(count)
+  -- writer.u32(count)
 
   for id, ent in pairs(self.server.entities) do
-    writer.u32(id)
-    ent:pack(writer)
+    if ent.net_replicate then
+      writer.u32(id)
+      ent:pack(writer)
+    end
   end
 
   self.peer:send(writer.to_str())

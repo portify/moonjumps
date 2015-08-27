@@ -8,7 +8,7 @@ function love.load()
   love.graphics.setFont(love.graphics.newFont("bloat/SourceCodePro-Regular.ttf", 12))
 
   main = server {}
-  main:add(require("shared.entities.shitty_drawn_skybox"):new())
+  main:add(require("shared.entities.sky"):new())
 end
 
 function love.update(dt)
@@ -19,7 +19,7 @@ function love.draw()
   love.graphics.push()
 
   for _, ent in pairs(main.entities) do
-    if ent.use_draw then
+    if ent.draw then
       ent:draw()
     end
   end
@@ -27,7 +27,7 @@ function love.draw()
   love.graphics.pop()
 
   for _, ent in pairs(main.entities) do
-    if ent.use_draw_abs then
+    if ent.draw_abs then
       ent:draw_abs()
     end
   end
