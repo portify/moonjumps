@@ -33,12 +33,8 @@ function index:connected()
 
   self.peer:send(writer.to_str())
 
-  self.player = player:new(self.server, 50, 50)
+  self.player = player:new(50, 50)
   self.server:add(self.player)
-  -- self.player.last_processed_input = -1
-  -- self.player.id = self.server.next_entity_id
-  -- self.server.entities[self.player.id] = self.player
-  -- self.server.next_entity_id = self.server.next_entity_id + 1
 
   self:set_control(self.player)
 end
@@ -81,6 +77,29 @@ function index:set_control(ent)
   local writer = packer.writer(5)
   writer.u8(constants.packets.entity_control)
   writer.u32(ent.id)
+  self.peer:send(writer.to_str())
+end
+
+function index:consider_send_update()
+  local size = 6
+  local count = 0
+
+  -- TODO: find a better way of calculating proper buffer size
+  for _, ent in pairs(self.server.entities) do
+    size = size + 8 + ent.max_pack_size
+    count = count + 1
+  end
+
+  local writer = packer.writer(size)
+  writer.u8(constants.packets.server_state)
+  writer.u32(self.last_processed_input)
+  writer.u32(count)
+
+  for id, ent in pairs(self.server.entities) do
+    writer.u32(id)
+    ent:pack(writer)
+  end
+
   self.peer:send(writer.to_str())
 end
 

@@ -1,7 +1,7 @@
 local args = require "shared.lib.args"
 
 if args.flag "server" then
-  require "main-server"
+  require "server.main"
 else
-  require "main-client"
+  require "client.main"
 end

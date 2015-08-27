@@ -4,14 +4,13 @@ local entity = {
   use_server_update = false,
   use_client_update = false,
   use_draw = false,
-  use_draw_abs = false
+  use_draw_abs = false,
+  net_graph_category = "other"
 }
 entity.__index = entity
 
-function entity:new(server)
-  return setmetatable({
-    server = server
-  }, self)
+function entity:new()
+  return setmetatable({}, self)
 end
 
 function entity:new_client()

@@ -1,4 +1,7 @@
 return {
+  revision = 0,
+  channels = 4,
+  default_port = 6780,
   packets = {
     entity_add = 0,
     entity_remove = 1,
@@ -6,6 +9,11 @@ return {
     client_input = 3,
     server_state = 4
   },
-  revision = 0,
-  channels = 4
+  connect = {
+    normal = 0,
+  },
+  disconnect = {
+    unknown = 0,
+    closing = 1
+  }
 }

@@ -3,23 +3,18 @@ local baseentity = require "shared.entities.baseentity"
 local player = {
   max_pack_size = 16,
   allow_control = true,
-  use_draw = true
+  use_draw = true,
+  net_graph_category = "player"
 }
 player.__index = player
 setmetatable(player, baseentity)
 
-function player:new(server, x, y)
-  return setmetatable({
-    server = server,
-    x = x, y = y, xv = 0, yv = 0
-  }, self)
+function player:new(x, y)
+  return setmetatable({x = x, y = y, xv = 0, yv = 0}, self)
 end
 
-function player:new_client(client)
-  return setmetatable({
-    client = client,
-    x = 0, y = 0, xv = 0, yv = 0
-  }, self)
+function player:new_client()
+  return setmetatable({x = 0, y = 0, xv = 0, yv = 0}, self)
 end
 
 function player:pack(writer)
@@ -37,8 +32,8 @@ function player:unpack(reader)
 end
 
 function player:update_user(dt, input)
-  self.xv = input.x * 100
-  self.yv = self.yv + 300 * dt
+  self.xv = input.x * 250
+  self.yv = self.yv + 800 * dt
 
   if input.y > 0 and self.y >= 400 then
     self.yv = -400

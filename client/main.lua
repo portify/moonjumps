@@ -23,7 +23,7 @@ function love.load()
     error("failed to create host")
   end
 
-  client.host = unfair(client.host, 500)
+  client.host = unfair(client.host, 0)
   client.peer = client.host:connect("localhost:6780", 8, 0)
 
   if client.peer == nil then
@@ -45,7 +45,8 @@ local function handle_receive(reader)
     while not reader.eof() do
       local id = reader.u32()
       local type = reader.u16()
-      client.entities[id] = player:new_client(client)
+      client.entities[id] = player:new_client()
+      client.entities[id].client = client
       client.entities[id]:unpack(reader)
     end
   elseif packet == constants.packets.entity_remove then
