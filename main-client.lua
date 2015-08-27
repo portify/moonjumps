@@ -12,18 +12,18 @@ function love.load()
 
   client = {
     entities = {},
-    input_sequence_number = 0,
-    input_sequence_ack = 0,
+    input_seq = 0,
+    input_ack = -1,
     pending_inputs = {}
   }
 
   client.host = enet.host_create(nil, 1, 8, 0, 0)
-  client.host = unfair(client.host, 500)
 
   if client.host == nil then
     error("failed to create host")
   end
 
+  client.host = unfair(client.host, 500)
   client.peer = client.host:connect("localhost:6780", 8, 0)
 
   if client.peer == nil then
@@ -31,24 +31,34 @@ function love.load()
   end
 end
 
+function love.quit()
+  if client.host and client.peer then
+    client.peer:disconnect(1)
+    client.host:service()
+  end
+end
+
 local function handle_receive(reader)
   local packet = reader.u8()
 
   if packet == constants.packets.entity_add then
-    local id = reader.u32()
-    local type = reader.u16()
-    client.entities[id] = player:new_client(client)
-    client.entities[id]:unpack(reader)
+    while not reader.eof() do
+      local id = reader.u32()
+      local type = reader.u16()
+      client.entities[id] = player:new_client(client)
+      client.entities[id]:unpack(reader)
+    end
   elseif packet == constants.packets.entity_remove then
-    local id = reader.u32()
-    client.entities[id] = nil
+    while not reader.eof() do
+      client.entities[reader.u32()] = nil
+    end
   elseif packet == constants.packets.entity_control then
     client.entity_id = reader.u32()
   elseif packet == constants.packets.server_state then
     local last_processed_input = reader.u32()
     local count = reader.u32()
 
-    client.input_sequence_ack = last_processed_input
+    client.input_ack = last_processed_input
 
     for _=1, count do
       local entity_id = reader.u32()
@@ -66,7 +76,7 @@ local function handle_receive(reader)
         while i <= #client.pending_inputs do
           local input = client.pending_inputs[i]
 
-          if input.input_sequence_number <= last_processed_input then
+          if input.input_seq <= last_processed_input then
             table.remove(client.pending_inputs, i)
           else
             ent:update_user(input.dt, input, false)
@@ -115,12 +125,12 @@ function love.update(dt)
   if love.keyboard.isDown("up"   ) then input.y = input.y - 1 end
 
   input.dt = dt
-  input.input_sequence_number = client.input_sequence_number
-  client.input_sequence_number = client.input_sequence_number + 1
+  input.input_seq = client.input_seq
+  client.input_seq = client.input_seq + 1
 
   local writer = packer.writer(17)
   writer.u8(constants.packets.client_input)
-  writer.u32(input.input_sequence_number)
+  writer.u32(input.input_seq)
   writer.f32(input.dt)
   writer.f32(input.x)
   writer.f32(input.y)
@@ -150,8 +160,8 @@ function love.draw()
   local lines = {
     #client.pending_inputs .. " pending inputs",
     "ping " .. client.peer:round_trip_time(),
-    "seq  " .. client.input_sequence_number,
-    "ack  " .. client.input_sequence_ack
+    "seq  " .. client.input_seq,
+    "ack  " .. client.input_ack
   }
 
   love.graphics.printf(table.concat(lines, "\n"), 10, 10, love.graphics.getWidth() - 20)

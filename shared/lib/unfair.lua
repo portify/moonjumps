@@ -42,7 +42,7 @@ return function(host, latency, jitter, loss)
       end
     }, {
       __index = function(_, key)
-        return function(...)
+        return function(_, ...)
           peer[key](peer, ...)
         end
       end
@@ -81,7 +81,7 @@ return function(host, latency, jitter, loss)
     end
   }, {
     __index = function(_, key)
-      return function(...)
+      return function(_, ...)
         host[key](host, ...)
       end
     end

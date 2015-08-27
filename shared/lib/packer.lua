@@ -31,6 +31,8 @@ local function reader(s)
   end
 
   return {
+    eof = function() return len == 0 end,
+
     u8  = function() return read("uint8_t") end,
     u16 = function() return read("uint16_t") end,
     u32 = function() return read("uint32_t") end,

@@ -20,10 +20,12 @@ function love.load()
 
   -- move this
   function server:add(ent)
-    assert(ent.id == nil, "attempting to re-add entity", 1)
+    if ent.id ~= nil then return end
+
     ent.id = self.next_entity_id
     self.entities[ent.id] = ent
     self.next_entity_id = self.next_entity_id + 1
+
     local writer = packer.writer(7 + ent.max_pack_size)
     writer.u8(constants.packets.entity_add)
     writer.u32(ent.id)
@@ -32,12 +34,25 @@ function love.load()
     self.host:broadcast(writer.to_str())
   end
 
+  function server:remove(ent)
+    if ent.id == nil then return end
+
+    local writer = packer.writer(5)
+    writer.u8(constants.packets.entity_remove)
+    writer.u32(ent.id)
+    self.host:broadcast(writer.to_str())
+
+    self.entities[ent.id] = nil
+    ent.id = nil
+  end
+
   server.host = enet.host_create("*:6780", 64, 8, 0, 0)
-  server.host = unfair(server.host, 500)
 
   if server.host == nil then
     error("failed to create host")
   end
+
+  server.host = unfair(server.host, 500)
 end
 
 local function build_update(cl)

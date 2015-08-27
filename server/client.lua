@@ -16,17 +16,36 @@ end
 function index:connected()
   print("client " .. self.peer:index() .. " connected")
 
+  local size = 1
+
+  for _, ent in pairs(self.server.entities) do
+    size = size + 6 + ent.max_pack_size
+  end
+
+  local writer = packer.writer(size)
+  writer.u8(constants.packets.entity_add)
+
+  for id, ent in pairs(self.server.entities) do
+    writer.u32(id)
+    writer.u16(0)
+    ent:pack(writer)
+  end
+
+  self.peer:send(writer.to_str())
+
   self.player = player:new(self.server, 50, 50)
+  self.server:add(self.player)
   -- self.player.last_processed_input = -1
-  self.player.id = self.server.next_entity_id
-  self.server.entities[self.player.id] = self.player
-  self.server.next_entity_id = self.server.next_entity_id + 1
+  -- self.player.id = self.server.next_entity_id
+  -- self.server.entities[self.player.id] = self.player
+  -- self.server.next_entity_id = self.server.next_entity_id + 1
 
   self:set_control(self.player)
 end
 
 function index:disconnected()
-  self.server.entities[self.player.id] = nil
+  self.server:remove(self.player)
+  -- self.server.entities[self.player.id] = nil
   print("client " .. self.peer:index() .. " disconnected")
 end
 
